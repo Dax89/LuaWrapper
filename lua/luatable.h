@@ -10,6 +10,8 @@
 
 namespace Lua
 {
+
+
     class LuaTable : public LuaReference
     {
         private:
@@ -44,7 +46,6 @@ namespace Lua
                     return std::strcmp(s1, s2) < 0;
                 }
             };
-
 
         public:
             typedef shared_ptr<LuaTable> Ptr;
@@ -194,7 +195,7 @@ namespace Lua
 
                 public:
                     LuaMethodT(lua_State* l, typename BaseClass::FunctionType func): BaseClass(l, func) { }
-                    LuaMethodT(lua_State* l, int index): LuaCFunctionT<ReturnType, Args...>(l, index) { }
+                    LuaMethodT(lua_State* l, int index): BaseClass(l, index) { }
 
                     static ClassType::Ptr create(lua_State* l, typename BaseClass::FunctionType func)
                     {
@@ -248,17 +249,20 @@ namespace Lua
                 return t;
             }
 
-            template<typename K> LuaCFunction::Ptr get(K key)
+            template<typename ReturnType, typename... Args> typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr method(lua_String name)
             {
                 this->push();
-                luaT_pushvalue(this->state(), key);
+                luaT_pushvalue(this->state(), name);
                 lua_gettable(this->state(), -2);
 
-                LuaCFunction::Ptr t(new LuaCFunction(this->state(), -1));
+                typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr t(new LuaTable::LuaMethodT<ReturnType, Args...>(this->state(), -1));
                 lua_pop(this->state(), 2);
                 return t;
             }
 
+
+            void set(lua_Number key, void* value) const;
+            void set(lua_String key, void* value) const;
             void set(lua_Number key, lua_Number value) const;
             void set(lua_String key, lua_String value) const;
             void set(lua_String key, lua_Number value) const;
@@ -294,6 +298,7 @@ namespace Lua
     };
 
     void luaT_getvalue(lua_State *l, int index, LuaTable::Ptr &v);
+    void luaT_pushvalue(lua_State *l, LuaTable::Ptr& v);
 }
 
 #endif // LUA_LUATABLE_H

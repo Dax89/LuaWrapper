@@ -54,10 +54,10 @@ namespace Lua
     bool luaW_functionexists(lua_State* l, lua_String funcname);
     void luaW_setfunction(lua_State *l, lua_String funcname, const LuaCFunction::Ptr &func);
 
-    template<typename ReturnType, typename... Args> LuaCFunctionT<ReturnType, Args...> luaW_getfunction(lua_State* l, lua_String funcname)
+    template<typename ReturnType, typename... Args> typename LuaCFunctionT<ReturnType, Args...>::Ptr luaW_getfunction(lua_State* l, lua_String funcname)
     {
         lua_getglobal(l, funcname);
-        LuaCFunctionT<ReturnType, Args...> f = LuaCFunctionT<ReturnType, Args...>::create(l, funcname);
+        typename LuaCFunctionT<ReturnType, Args...>::Ptr f = LuaCFunctionT<ReturnType, Args...>::create(l, -1);
         lua_pop(l, 1);
         return f;
     }

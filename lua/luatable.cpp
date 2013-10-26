@@ -104,6 +104,16 @@ namespace Lua
         return LuaTable::Iterator(this, true);
     }
 
+    void LuaTable::set(lua_Number key, void *value) const
+    {
+        LuaTable::ValueSetter<lua_Number, void*>()(this, key, value);
+    }
+
+    void LuaTable::set(lua_String key, void *value) const
+    {
+        LuaTable::ValueSetter<lua_String, void*>()(this, key, value);
+    }
+
     void LuaTable::set(lua_Number key, lua_Number value) const
     {
         LuaTable::ValueSetter<lua_Number, lua_Number>()(this, key, value);
@@ -168,4 +178,10 @@ namespace Lua
     {
         v = LuaTable::create(l, index);
     }
+
+    void luaT_pushvalue(lua_State *l, LuaTable::Ptr &v)
+    {
+        v->push(l);
+    }
+
 }

@@ -8,6 +8,7 @@
 
 namespace Lua
 {
+    typedef void* lua_UserData;
     typedef const char* lua_String;
 
     namespace LuaTypes
@@ -102,6 +103,16 @@ namespace Lua
         static lua_String get(lua_State *l)
         {
             lua_String val = lua_tostring(l, -1);
+            lua_pop(l, 1);
+            return val;
+        }
+    };
+
+    template<> struct ValueExtractor<lua_UserData>
+    {
+        static lua_UserData get(lua_State *l)
+        {
+            lua_UserData val = lua_touserdata(l, -1);
             lua_pop(l, 1);
             return val;
         }

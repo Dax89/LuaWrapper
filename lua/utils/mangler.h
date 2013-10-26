@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../luatypes.h"
+#include "tupleforeach.h"
 
 namespace Lua
 {
@@ -91,6 +92,23 @@ namespace Lua
                             throw LuaException("(Lua)Mangler: Unsupported Type");
                             break;
                     }
+                }
+            };
+
+            template<typename... Args> struct MangledName
+            {
+                void operator()(std::string* s)
+                {
+                    std::tuple<Args...> args;
+                    Utils::TupleForeach::for_each(args, MangleFunctionFromType(), s);
+                }
+            };
+
+            template<> struct MangledName<>
+            {
+                void operator()(std::string*)
+                {
+
                 }
             };
         }

@@ -308,7 +308,7 @@ namespace Lua
     };
 
     void luaT_getvalue(lua_State *l, int index, LuaTable::Ptr &v);
-    void luaT_pushvalue(lua_State *l, LuaTable::Ptr& v);
+    void luaT_pushvalue(lua_State *l, const LuaTable::Ptr& v);
 }
 
 #endif // LUA_LUATABLE_H

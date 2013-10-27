@@ -179,7 +179,7 @@ namespace Lua
         v = LuaTable::create(l, index);
     }
 
-    void luaT_pushvalue(lua_State *l, LuaTable::Ptr &v)
+    void luaT_pushvalue(lua_State *l, const LuaTable::Ptr &v)
     {
         v->push(l);
     }

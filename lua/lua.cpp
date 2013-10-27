@@ -17,14 +17,24 @@ namespace Lua
                     Utils::Mangler::MangleFunctionFromLuaType()(t, i, &mangledfunc);
                 }
 
-                LuaCFunction::Ptr fp = globalOverloads.get(func.c_str(), mangledfunc.c_str());
-                fp->push();
+                try
+                {
+                    LuaCFunction::Ptr fp = globalOverloads.get(func.c_str(), mangledfunc.c_str());
+                    fp->push();
 
-                for(int i = 1; i <= argcount; i++)
-                    lua_pushvalue(l, i); /* Push/Forward Arguments */
+                    for(int i = 1; i <= argcount; i++)
+                        lua_pushvalue(l, i); /* Push/Forward Arguments */
 
-                lua_pcall(l, argcount, (fp->hasReturnType() ? 1 : 0), 0);
-                return (fp->hasReturnType() ? 1 : 0);
+                    lua_pcall(l, argcount, (fp->hasReturnType() ? 1 : 0), 0);
+                    return (fp->hasReturnType() ? 1 : 0);
+                }
+                catch(std::out_of_range&)
+                {
+                    string s = "Unknown Overload: ";
+                    throw LuaException(s.append(mangledfunc).c_str());
+                }
+
+                return 0;
             };
 
             return static_cast<lua_CFunction>(f);

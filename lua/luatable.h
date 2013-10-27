@@ -10,8 +10,6 @@
 
 namespace Lua
 {
-
-
     class LuaTable : public LuaReference
     {
         private:
@@ -71,8 +69,7 @@ namespace Lua
 
                     Iterator(const Iterator& it): _owner(it._owner), _finished(it._finished)
                     {
-                         this->_keyref = this->cloneRef(it._keyref);
-                         this->_valueref = this->cloneRef(it._valueref);
+                         *this = it;
                     }
 
                     ~Iterator()
@@ -88,6 +85,19 @@ namespace Lua
                         this->_owner->push();
                         lua_rawgeti(this->_owner->state(), LUA_REGISTRYINDEX, this->_keyref);
                         this->nextPair();
+
+                        return *this;
+                    }
+
+                    LuaTable::Iterator& operator=(const LuaTable::Iterator& rhs)
+                    {
+                        if(*this != rhs)
+                        {
+                            this->_finished = rhs._finished;
+                            this->_owner = rhs._owner;
+                            this->_keyref = rhs.cloneRef(rhs._keyref);
+                            this->_valueref = rhs.cloneRef(rhs._valueref);
+                        }
 
                         return *this;
                     }

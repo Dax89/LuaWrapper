@@ -4,8 +4,6 @@
 #include <lua.hpp>
 #include "luaexception.h"
 
-#define NULL_USERDATA static_cast<void*>(NULL)
-
 namespace Lua
 {
     typedef void* lua_UserData;

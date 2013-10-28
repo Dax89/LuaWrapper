@@ -116,7 +116,7 @@ namespace Lua
         return LuaTable::Iterator(this, true);
     }
 
-    void LuaTable::setObject(lua_UserData thethis) const
+    void LuaTable::setMe(lua_UserData thethis) const
     {
         this->set(LuaTable::COBJECT_FIELD, thethis);
     }

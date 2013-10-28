@@ -273,7 +273,7 @@ namespace Lua
                 return t;
             }
 
-            template<typename T> T* object() const
+            template<typename T> T* me() const
             {
                 lua_UserData thethis = this->get<lua_String, lua_UserData>(LuaTable::COBJECT_FIELD);
                 return reinterpret_cast<T*>(thethis);
@@ -293,7 +293,7 @@ namespace Lua
             bool isEmpty() const;
             LuaTable::Iterator begin() const;
             LuaTable::Iterator end() const;
-            void setObject(lua_UserData thethis) const;
+            void setMe(lua_UserData thethis) const;
 
         private:
             Utils::OverloadTable _overloads;

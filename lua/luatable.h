@@ -49,6 +49,9 @@ namespace Lua
             typedef shared_ptr<LuaTable> Ptr;
 
         private:
+            static const lua_String COBJECT_FIELD;
+
+        private:
             typedef map<lua_Integer, LuaReference::Ptr> NumberRefMap;
             typedef map<lua_String, LuaReference::Ptr, LuaTable::StringComparator> StringRefMap;
 
@@ -237,7 +240,7 @@ namespace Lua
 
             bool containsKey(const LuaReference::Ptr& key) const;
 
-            template<typename K, typename V> V get(K key)
+            template<typename K, typename V> V get(K key) const
             {
                 this->push();
                 luaT_pushvalue(this->state(), key);
@@ -248,7 +251,7 @@ namespace Lua
                 return v;
             }
 
-            template<typename K> LuaTable::Ptr get(K key)
+            template<typename K> LuaTable::Ptr get(K key) const
             {
                 this->push();
                 luaT_pushvalue(this->state(), key);
@@ -259,7 +262,7 @@ namespace Lua
                 return t;
             }
 
-            template<typename ReturnType, typename... Args> typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr method(lua_String name)
+            template<typename ReturnType, typename... Args> typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr method(lua_String name) const
             {
                 this->push();
                 luaT_pushvalue(this->state(), name);
@@ -270,9 +273,14 @@ namespace Lua
                 return t;
             }
 
+            template<typename T> T* object() const
+            {
+                lua_UserData thethis = this->get<lua_String, lua_UserData>(LuaTable::COBJECT_FIELD);
+                return reinterpret_cast<T*>(thethis);
+            }
 
-            void set(lua_Number key, void* value) const;
-            void set(lua_String key, void* value) const;
+            void set(lua_Number key, lua_UserData value) const;
+            void set(lua_String key, lua_UserData value) const;
             void set(lua_Number key, lua_Number value) const;
             void set(lua_String key, lua_String value) const;
             void set(lua_String key, lua_Number value) const;
@@ -285,6 +293,7 @@ namespace Lua
             bool isEmpty() const;
             LuaTable::Iterator begin() const;
             LuaTable::Iterator end() const;
+            void setObject(lua_UserData thethis) const;
 
         private:
             Utils::OverloadTable _overloads;

@@ -2,6 +2,8 @@
 
 namespace Lua
 {
+    const lua_String LuaTable::COBJECT_FIELD = "__cthis__";
+
     LuaTable::LuaTable(lua_State *l): LuaReference(l)
     {
         lua_newtable(l);
@@ -114,14 +116,19 @@ namespace Lua
         return LuaTable::Iterator(this, true);
     }
 
-    void LuaTable::set(lua_Number key, void *value) const
+    void LuaTable::setObject(lua_UserData thethis) const
     {
-        LuaTable::ValueSetter<lua_Number, void*>()(this, key, value);
+        this->set(LuaTable::COBJECT_FIELD, thethis);
     }
 
-    void LuaTable::set(lua_String key, void *value) const
+    void LuaTable::set(lua_Number key, lua_UserData value) const
     {
-        LuaTable::ValueSetter<lua_String, void*>()(this, key, value);
+        LuaTable::ValueSetter<lua_Number, lua_UserData>()(this, key, value);
+    }
+
+    void LuaTable::set(lua_String key, lua_UserData value) const
+    {
+        LuaTable::ValueSetter<lua_String, lua_UserData>()(this, key, value);
     }
 
     void LuaTable::set(lua_Number key, lua_Number value) const

@@ -10,25 +10,32 @@ namespace Lua
     {
         using namespace std;
 
-        template<int Index, typename... Args> struct StackToTuple
-        {
-            static void fill(lua_State* l, std::tuple<Args...>& args)
-            {
-                luaT_getargument(l, sizeof...(Args) - Index + 1, std::get<sizeof...(Args) - Index>(args));
-                StackToTuple<Index - 1, Args...>::fill(l, args);
-            }
-        };
-
-        template<typename... Args> struct StackToTuple<0, Args...>
-        {
-            static void fill(lua_State*, std::tuple<Args...>&)
-            {
-
-            }
-        };
-
         namespace Stack
         {
+            /* Lua Stack -> Tuple */
+            template<int Index, int Length, typename... Args> struct StackToTupleImpl
+            {
+                static void fill(lua_State* l, std::tuple<Args...>& args)
+                {
+                    luaT_getargument(l, Index + 1, std::get<Index>(args));
+                    StackToTupleImpl<Index + 1, Length, Args...>::fill(l, args);
+                }
+            };
+
+            template<int Length, typename... Args> struct StackToTupleImpl<Length, Length, Args...>
+            {
+                static void fill(lua_State*, std::tuple<Args...>&)
+                {
+
+                }
+            };
+
+            template<typename... Args> void stackToTuple(lua_State* l, std::tuple<Args...>& args)
+            {
+                StackToTupleImpl<0, sizeof...(Args), Args...>::fill(l, args);
+            }
+
+            /* Tuple -> Lua Stack */
             template<int Index, int Length, typename Tuple> struct TupleToStackImpl
             {
                 static void push(lua_State* l, const Tuple& args)

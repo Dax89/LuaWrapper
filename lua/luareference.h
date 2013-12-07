@@ -18,13 +18,12 @@ namespace Lua
             LuaReference(lua_State *l, int index);
             virtual ~LuaReference();
             int refId() const;
-            bool isValid() const;
-            void push() const;
+            bool isValid();
 
         public: /* Overriden Methods */
-            virtual int length() const;
-            virtual LuaTypes::LuaType type() const;
-            virtual void push(lua_State* l) const;
+            virtual int length();
+            virtual LuaTypes::LuaType type();
+            virtual void push();
 
         protected:
             int _ref;

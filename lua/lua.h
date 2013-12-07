@@ -1,10 +1,12 @@
 #ifndef LUA_H
 #define LUA_H
 
-#include "luatable.h"
-#include "luacfunction.h"
+#include "libraries/libraries.h"
 #include "luathread.h"
-#include "utils/overloadtable.h"
+#include "table/luatable.h"
+#include "table/luactable.h"
+#include "function/luafunction.h"
+#include "function/luacfunction.h"
 
 #define STRICT_LUA "local getinfo, error, rawset, rawget = debug.getinfo, error, rawset, rawget\n" \
                    "local mt = getmetatable(_G)\n" \
@@ -36,36 +38,9 @@
 
 namespace Lua
 {
-    namespace Core
-    {
-        static Utils::OverloadTable globalOverloads;
-        lua_CFunction functionDispatcher();
-    }
-
-    using namespace std;
-
-    lua_State* luaW_newstate(bool strict = false);    
-
-    // Table Management
-    void luaW_settable(lua_State* l, lua_String name, LuaTable::Ptr table);
-    LuaTable::Ptr luaW_gettable(lua_State* l, lua_String name);
-
-    // Function Management
-    bool luaW_functionexists(lua_State* l, lua_String funcname);
-    void luaW_setfunction(lua_State *l, lua_String funcname, const LuaCFunction::Ptr &func);
-
-    template<typename ReturnType, typename... Args> typename LuaCFunctionT<ReturnType, Args...>::Ptr luaW_getfunction(lua_State* l, lua_String funcname)
-    {
-        lua_getglobal(l, funcname);
-        typename LuaCFunctionT<ReturnType, Args...>::Ptr f = LuaCFunctionT<ReturnType, Args...>::create(l, -1);
-        lua_pop(l, 1);
-        return f;
-    }
-
-    // Misc Functions
+    lua_State* luaW_newstate(bool strict = false);
     void luaW_addsearchpath(lua_State *l, const char* s);
     void luaW_dofile(lua_State *l, const char* file);
     void luaW_dostring(lua_State* l, const char* s);
-    void luaW_register(lua_State* l, const LuaTable::Ptr &table, const luaL_Reg *functions);
 }
 #endif // LUA_H

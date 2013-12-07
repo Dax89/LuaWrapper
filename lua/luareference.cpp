@@ -24,7 +24,7 @@ namespace Lua
         this->_ref = -1;
     }
 
-    int LuaReference::length() const
+    int LuaReference::length()
     {
         this->push();
         int len = lua_objlen(this->state(), -1);
@@ -38,12 +38,12 @@ namespace Lua
         return this->_ref;
     }
 
-    bool LuaReference::isValid() const
+    bool LuaReference::isValid()
     {
         return this->_ref != -1;
     }
 
-    LuaTypes::LuaType LuaReference::type() const
+    LuaTypes::LuaType LuaReference::type()
     {
         this->push();
         LuaTypes::LuaType t = luaT_typeof(this->state(), -1);
@@ -52,13 +52,8 @@ namespace Lua
         return t;
     }
 
-    void LuaReference::push(lua_State *l) const
+    void LuaReference::push()
     {
-        lua_rawgeti(l, LUA_REGISTRYINDEX, this->_ref);
-    }
-
-    void LuaReference::push() const
-    {
-        this->push(this->state());
+        lua_rawgeti(this->state(), LUA_REGISTRYINDEX, this->_ref);
     }
 }

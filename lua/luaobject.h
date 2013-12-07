@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include "luatypes.h"
+#include "luaexception.h"
 
 namespace Lua
 {
@@ -17,10 +18,11 @@ namespace Lua
             LuaObject(lua_State* l);
             virtual ~LuaObject();
             lua_State* state() const;
-            bool isNull() const;
-            virtual int length() const = 0;
-            virtual LuaTypes::LuaType type() const = 0;
-            virtual void push(lua_State *l) const = 0;
+            bool isNull();
+            virtual int length() = 0;
+            virtual LuaTypes::LuaType type() = 0;
+            virtual void push() = 0;
+            virtual void pushGlobal(lua_String name);
 
         private:
             lua_State* _state;

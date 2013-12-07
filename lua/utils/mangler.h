@@ -1,6 +1,7 @@
 #ifndef MANGLER_H
 #define MANGLER_H
 
+#include <cstring>
 #include <string>
 #include "../luatypes.h"
 #include "tupleforeach.h"
@@ -11,17 +12,16 @@ namespace Lua
     {
         namespace Mangler
         {
-            using namespace std;
-
-            struct MangleFunctionFromType
+            struct MangleFromType
             {
                 template<typename T> void operator()(const T&, const int i, string* s)
                 {
                     if(i == 0)
                         s->append("_");
 
-                    switch(typeOf<T>())
+                    switch(TypeOf<T>::LuaType)
                     {
+                        case LuaTypes::Integer:
                         case LuaTypes::Number:
                             s->append("n");
                             break;
@@ -34,6 +34,7 @@ namespace Lua
                             s->append("b");
                             break;
 
+                        case LuaTypes::CTable:
                         case LuaTypes::Table:
                             s->append("t");
                             break;
@@ -48,13 +49,13 @@ namespace Lua
                             break;
 
                         default:
-                            throw LuaException("Mangler: Unsupported Type");
+                            s->append("?");
                             break;
                     }
                 }
             };
 
-            struct MangleFunctionFromLuaType
+            struct MangleFromLuaType
             {
                 void operator()(LuaTypes::LuaType lt, const int i, string* s)
                 {
@@ -63,6 +64,7 @@ namespace Lua
 
                     switch(lt)
                     {
+                        case LuaTypes::Integer:
                         case LuaTypes::Number:
                             s->append("n");
                             break;
@@ -75,6 +77,7 @@ namespace Lua
                             s->append("b");
                             break;
 
+                        case LuaTypes::CTable:
                         case LuaTypes::Table:
                             s->append("t");
                             break;
@@ -89,28 +92,43 @@ namespace Lua
                             break;
 
                         default:
-                            throw LuaException("(Lua)Mangler: Unsupported Type");
+                            s->append("?");
                             break;
                     }
                 }
             };
 
-            template<typename... Args> struct MangledName
+            struct MangledName
+            {
+                void operator()(lua_State* l, int argcount, std::string* s)
+                {
+                    for(int i = 0; i < argcount; i++)
+                    {
+                        LuaTypes::LuaType t = luaT_typeof(l, i + 1);
+                        Utils::Mangler::MangleFromLuaType()(t, i, s);
+                    }
+                }
+            };
+
+            template<typename... Args> struct MangledNameT
             {
                 void operator()(std::string* s)
                 {
                     std::tuple<Args...> args;
-                    Utils::TupleForeach::for_each(args, MangleFunctionFromType(), s);
+                    Utils::TupleForeach::for_each(args, MangleFromType(), s);
                 }
             };
 
-            template<> struct MangledName<>
+            template<> struct MangledNameT<>
             {
                 void operator()(std::string*)
                 {
 
                 }
             };
+
+            const char* functionPrototype(const std::string& mangledfunc);
+            const char* functionPrototype(lua_State* l, std::string funcname, int argcount);
         }
     }
 }

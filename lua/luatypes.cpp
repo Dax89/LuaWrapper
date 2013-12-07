@@ -4,12 +4,7 @@ namespace Lua
 {
     LuaTypes::LuaType luaT_typeof(lua_State *l, int index)
     {
-        int t = lua_type(l, index);
-
-        if(t == LUA_TNONE)
-            throw LuaException("Invalid Lua Type");
-
-        return static_cast<LuaTypes::LuaType>(t);
+        return static_cast<LuaTypes::LuaType>(lua_type(l, index));
     }
 
     bool luaT_isref(lua_State *l, int index)
@@ -18,14 +13,6 @@ namespace Lua
 
         switch(t)
         {
-            case LuaTypes::Nil:
-            case LuaTypes::Bool:
-            case LuaTypes::LightUserData:
-            case LuaTypes::Number:
-            case LuaTypes::String:
-            case LuaTypes::UserData:
-                return false;
-
             case LuaTypes::Table:
             case LuaTypes::Function:
             case LuaTypes::Thread:
@@ -35,7 +22,7 @@ namespace Lua
                 break;
         }
 
-        throw LuaException("Invalid Lua Type");
+        return false;
     }
 
     bool luaT_isvalue(lua_State *l, int index)
@@ -52,16 +39,11 @@ namespace Lua
             case LuaTypes::UserData:
                 return true;
 
-            case LuaTypes::Table:
-            case LuaTypes::Function:
-            case LuaTypes::Thread:
-                return false;
-
             default:
                 break;
         }
 
-        throw LuaException("Invalid Lua Type");
+        return false;
     }
 
     const char *luaT_typename(LuaTypes::LuaType t)
@@ -95,10 +77,78 @@ namespace Lua
             case LuaTypes::Thread:
                 return "Thread";
 
+            /* Extra Lua Wrapper Types */
+            case LuaTypes::Integer:
+                return "Integer";
+
+            case LuaTypes::CTable:
+                return "CTable";
+
             default:
                 break;
         }
 
         return "Unknown";
     }
+
+    lua_String luaT_typevalue(lua_State *l, int index)
+    {
+        std::stringstream ss;
+        LuaTypes::LuaType t = luaT_typeof(l, index);
+
+        switch(t)
+        {
+            case LuaTypes::Number:
+                ss << lua_tonumber(l, index);
+                break;
+
+            case LuaTypes::String:
+                ss << lua_tostring(l, index);
+                break;
+
+            case LuaTypes::Bool:
+                ss << (lua_toboolean(l, index) != 0 ? "true" : "false");
+                break;
+
+            case LuaTypes::LightUserData:
+            case LuaTypes::UserData:
+                ss << std::hex << lua_touserdata(l, index);
+                break;
+
+            case LuaTypes::Nil:
+                ss << "nil";
+                break;
+
+            default:
+                ss << luaT_typename(t);
+                break;
+        }
+
+        return strdup(ss.str().c_str());
+    }
+
+    int luaT_tablelength(lua_State *l, int index)
+    {
+        if(luaT_typeof(l, index) != LuaTypes::Table)
+            return 0;
+
+        int len = 0;
+        lua_pushvalue(l, index);
+        lua_pushnil(l);
+
+        while(lua_next(l, -2))
+        {
+            lua_pop(l, 1);
+            len++;
+        }
+
+        lua_pop(l, 1);
+        return len;
+    }
+
+    lua_String luaT_typename(lua_State *l, int index)
+    {
+        return luaT_typename(luaT_typeof(l, index));
+    }
+
 }

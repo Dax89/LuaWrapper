@@ -1,8 +1,13 @@
 #ifndef LUATYPES_H
 #define LUATYPES_H
 
+#define lua_private private
+#define lua_public public
+
+#include <cstring>
+#include <sstream>
+#include <tuple>
 #include <lua.hpp>
-#include "luaexception.h"
 
 namespace Lua
 {
@@ -13,48 +18,101 @@ namespace Lua
     {
         enum LuaType
         {
-            None = LUA_TNONE,
-            Nil = LUA_TNIL,
-            Bool = LUA_TBOOLEAN,
+            None          = LUA_TNONE,
+            Nil           = LUA_TNIL,
+            Bool          = LUA_TBOOLEAN,
             LightUserData = LUA_TLIGHTUSERDATA,
-            Number = LUA_TNUMBER,
-            String = LUA_TSTRING,
-            Table = LUA_TTABLE,
-            Function = LUA_TFUNCTION,
-            UserData = LUA_TUSERDATA,
-            Thread = LUA_TTHREAD
+            Number        = LUA_TNUMBER,
+            String        = LUA_TSTRING,
+            Table         = LUA_TTABLE,
+            Function      = LUA_TFUNCTION,
+            UserData      = LUA_TUSERDATA,
+            Thread        = LUA_TTHREAD,
+
+            Integer       = 0x1000, /* Special Type for Wrapper when exporting Integers from C++ to Lua */
+            CTable        = 0x1001  /* Special Type for Wrapper when exporting Tables from C++ to Lua */
         };
     }
 
-    template<typename T> inline LuaTypes::LuaType typeOf()
+    template<typename T> class ReturnValue
     {
-        return LuaTypes::None;
-    }
+        public:
+            ReturnValue(T t): _t(t) { }
+            ReturnValue(const ReturnValue<T>& rt): _t(rt._t) { }
 
-    template<> inline LuaTypes::LuaType typeOf<lua_Integer>()
-    {
-        return LuaTypes::Number;
-    }
+            operator T()
+            {
+                return this->_t;
+            }
 
-    template<> inline LuaTypes::LuaType typeOf<lua_Number>()
-    {
-        return LuaTypes::Number;
-    }
+            ReturnValue<T>& operator=(const ReturnValue<T>& rhs)
+            {
+                if(this == &rhs)
+                    return *this;
 
-    template<> inline LuaTypes::LuaType typeOf<lua_String>()
-    {
-        return LuaTypes::String;
-    }
+                this->_t = rhs._t;
+                return *this;
+            }
 
-    template<> inline LuaTypes::LuaType typeOf<lua_UserData>()
-    {
-        return LuaTypes::UserData;
-    }
+            ReturnValue<T>& operator=(const T& rhs)
+            {
+                this->_t = rhs;
+            }
 
-    template<> inline LuaTypes::LuaType typeOf<bool>()
+        private:
+            T _t;
+    };
+
+    template<> class ReturnValue<void>
     {
-        return LuaTypes::Bool;
-    }
+        public:
+            ReturnValue() { }
+            ReturnValue(const ReturnValue<void>&) { }
+            operator void() { }
+            ReturnValue<void>& operator=(const ReturnValue<void>&) { return *this; }
+    };
+
+    template<typename T> struct TypeOf
+    {
+        typedef T Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::None;
+        static constexpr const char* TypeName = "None";
+    };
+
+    template<> struct TypeOf<lua_Integer>
+    {
+        typedef lua_Integer Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::Integer;
+        static constexpr const char* TypeName = "Integer";
+    };
+
+    template<> struct TypeOf<lua_Number>
+    {
+        typedef lua_Number Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::Number;
+        static constexpr const char* TypeName = "Number";
+    };
+
+    template<> struct TypeOf<lua_String>
+    {
+        typedef lua_String Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::String;
+        static constexpr const char* TypeName = "String";
+    };
+
+    template<> struct TypeOf<lua_UserData>
+    {
+        typedef lua_UserData Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::UserData;
+        static constexpr const char* TypeName = "UserData";
+    };
+
+    template<> struct TypeOf<bool>
+    {
+        typedef bool Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::Bool;
+        static constexpr const char* TypeName = "Bool";
+    };
 
     template<typename T> struct ValueExtractor
     {
@@ -116,6 +174,11 @@ namespace Lua
 
     };
 
+    template<> struct TypeCreator<LuaTypes::Integer>
+    {
+        typedef lua_Integer Type;
+    };
+
     template<> struct TypeCreator<LuaTypes::Number>
     {
         typedef lua_Number Type;
@@ -137,9 +200,12 @@ namespace Lua
     };
 
     LuaTypes::LuaType luaT_typeof(lua_State* l, int index);
+    lua_String luaT_typevalue(lua_State* l, int index);
+    lua_String luaT_typename(lua_State* l, int index);
+    lua_String luaT_typename(LuaTypes::LuaType t);
     bool luaT_isref(lua_State* l, int index);
     bool luaT_isvalue(lua_State* l, int index);
-    lua_String luaT_typename(LuaTypes::LuaType t);
+    int luaT_tablelength(lua_State* l, int index);
 
     inline void luaT_getvalue(lua_State* l, int index, lua_Integer& v) { v = lua_tointeger(l, index); }
     inline void luaT_getvalue(lua_State* l, int index, lua_Number& v) { v = lua_tonumber(l, index); }
@@ -155,11 +221,14 @@ namespace Lua
 
     template<typename T> inline void luaT_getargument(lua_State* l, int narg, T& t)
     {
-        LuaTypes::LuaType t1 = typeOf<T>();
+        LuaTypes::LuaType t1 = TypeOf<T>::LuaType;
         LuaTypes::LuaType t2 = luaT_typeof(l, narg);
 
+        if(t1 == LuaTypes::Integer) /* Correct the type using Lua Type System */
+            t1 = LuaTypes::Number;
+
         if(t2 != t1)
-            luaL_typerror(l, narg, luaT_typename(t1));
+            luaL_typerror(l, narg, TypeOf<T>::TypeName);
 
         luaT_getvalue(l, narg, t);
     }

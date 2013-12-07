@@ -1,12 +1,18 @@
 #ifndef LUA_LUATABLE_H
 #define LUA_LUATABLE_H
 
-#include <functional>
+#include <string>
 #include <map>
 #include <vector>
-#include "luareference.h"
-#include "luacfunction.h"
-#include "utils/overloadtable.h"
+#include <cstring>
+#include "../luareference.h"
+#include "../utils/safecall.h"
+#include "../utils/overloadtable.h"
+#include "../utils/callhelper.h"
+#include "../function/luacmethod.h"
+#include "../function/luacfunction.h"
+#include "../function/luamethod.h"
+#include "../function/luafunction.h"
 
 namespace Lua
 {
@@ -15,7 +21,7 @@ namespace Lua
         private:
             template<typename K, typename V> struct ValueSetter
             {
-                inline void operator()(const LuaTable* t, K key, V value)
+                inline void operator()(LuaTable* t, K key, V value)
                 {
                     t->push();
                     luaT_pushvalue(t->state(), key);
@@ -25,9 +31,24 @@ namespace Lua
                 }
             };
 
+            template<typename K> struct LuaFunctionSetter
+            {
+                inline void operator()(LuaTable* t, K key, lua_CFunction value, void* upvalue)
+                {
+                    t->push();
+                    luaT_pushvalue(t->state(), key);
+
+                    lua_pushlightuserdata(t->state(), upvalue);
+                    lua_pushcclosure(t->state(), value, 1);
+
+                    lua_settable(t->state(), -3);
+                    lua_pop(t->state(), 1);
+                }
+            };
+
             template<typename K> struct ReferenceSetter
             {
-                inline void operator()(const LuaTable* t, K key, LuaReference::Ptr value)
+                inline void operator()(LuaTable* t, K key, LuaReference::Ptr value)
                 {
                     t->push();
                     luaT_pushvalue(t->state(), key);
@@ -37,30 +58,42 @@ namespace Lua
                 }
             };
 
-            struct StringComparator
+            template<typename K> struct MethodSetter
             {
-                bool operator()(const char* s1, const char* s2) const
+                inline void operator()(LuaTable* t, K key, LuaCMethod::Ptr value)
                 {
-                    return std::strcmp(s1, s2) < 0;
+                    t->push();
+                    luaT_pushvalue(t->state(), key);
+                    value->push();
+                    lua_settable(t->state(), -3);
+                    lua_pop(t->state(), 1);
+                }
+            };
+
+            template<typename K> struct FunctionSetter
+            {
+                inline void operator()(LuaTable* t, K key, LuaCFunction::Ptr value)
+                {
+                    t->push();
+                    luaT_pushvalue(t->state(), key);
+                    value->push();
+                    lua_settable(t->state(), -3);
+                    lua_pop(t->state(), 1);
                 }
             };
 
         public:
-            typedef shared_ptr<LuaTable> Ptr;
+            typedef std::shared_ptr<LuaTable> Ptr;
 
         private:
             static const lua_String COBJECT_FIELD;
-
-        private:
-            typedef map<lua_Integer, LuaReference::Ptr> NumberRefMap;
-            typedef map<lua_String, LuaReference::Ptr, LuaTable::StringComparator> StringRefMap;
 
         public:
             class Iterator
             {
                 private:
-                    Iterator(const LuaTable* owner, bool finished): _owner(owner), _finished(finished), _keyref(LUA_NOREF), _valueref(LUA_NOREF) { }
-                    Iterator(const LuaTable* owner): _owner(owner), _finished(false), _keyref(LUA_NOREF), _valueref(LUA_NOREF)
+                    Iterator(LuaTable* owner, bool finished): _owner(owner), _finished(finished), _keyref(LUA_NOREF), _valueref(LUA_NOREF) { }
+                    Iterator(LuaTable* owner): _owner(owner), _finished(false), _keyref(LUA_NOREF), _valueref(LUA_NOREF)
                     {
                         owner->push();
                         lua_pushnil(owner->state());
@@ -143,6 +176,24 @@ namespace Lua
                         return ValueExtractor<T>::get(this->_owner->state());
                     }
 
+                    lua_String keyString() const
+                    {
+                        lua_rawgeti(this->_owner->state(), LUA_REGISTRYINDEX, this->_keyref);
+
+                        lua_String ks = luaT_typevalue(this->_owner->state(), -1);
+                        lua_pop(this->_owner->state(), 1);
+                        return ks;
+                    }
+
+                    lua_String valueString() const
+                    {
+                        lua_rawgeti(this->_owner->state(), LUA_REGISTRYINDEX, this->_valueref);
+
+                        lua_String ks = luaT_typevalue(this->_owner->state(), -1);
+                        lua_pop(this->_owner->state(), 1);
+                        return ks;
+                    }
+
                 private:
                     void unrefKey()
                     {
@@ -186,10 +237,12 @@ namespace Lua
                             this->_valueref = LUA_NOREF;
                             this->_finished = true;
                         }
+
+                        lua_pop(this->_owner->state(), 1); /* Pop owner */
                     }
 
                 private:
-                    const LuaTable* _owner;
+                    LuaTable* _owner;
                     bool _finished;
                     int _keyref;
                     int _valueref;
@@ -197,37 +250,22 @@ namespace Lua
                 friend class LuaTable;
             };
 
-            template<typename ReturnType, typename ...Args> class LuaMethodT: public LuaCFunctionT<ReturnType, LuaTable::Ptr, Args...>
-            {
-                private:
-                    typedef LuaCFunctionT<ReturnType, LuaTable::Ptr, Args...> BaseClass;
-                    typedef LuaMethodT<ReturnType, Args...> ClassType;
-
-                public:
-                    typedef shared_ptr<ClassType> Ptr;
-
-                public:
-                    LuaMethodT(lua_State* l, typename BaseClass::FunctionType func): BaseClass(l, func) { }
-                    LuaMethodT(lua_State* l, int index): BaseClass(l, index) { }
-
-                    static ClassType::Ptr create(lua_State* l, typename BaseClass::FunctionType func)
-                    {
-                        return ClassType::Ptr(new ClassType(l, func));
-                    }
-            };
-
         private:
-            static lua_CFunction dispatcher();
+            void stripSelf(lua_State* l, int &argcount);
+            static lua_CFunction methodDispatcher();
+            static lua_CFunction functionDispatcher();
 
         public:
             LuaTable(lua_State* l);
+            LuaTable(lua_State* l, lua_String name);
             LuaTable(lua_State* l, int index);
             LuaTable(lua_State *l, const LuaTable::Ptr& meta);
             static LuaTable::Ptr create(lua_State* l);
-            static LuaTable::Ptr create(lua_State* l, int index);
             static LuaTable::Ptr create(lua_State *l, const LuaTable::Ptr& meta);
+            static LuaTable::Ptr fromStack(lua_State* l, int index);
+            static LuaTable::Ptr global(lua_State *l, lua_String name);
 
-            template<typename T> bool containsKey(T key) const
+            template<typename T> bool containsKey(T key)
             {
                 this->push();
                 luaT_pushvalue(this->state(), key);
@@ -238,9 +276,9 @@ namespace Lua
                 return res;
             }
 
-            bool containsKey(const LuaReference::Ptr& key) const;
+            bool containsKey(const LuaReference::Ptr& key);
 
-            template<typename K, typename V> V get(K key) const
+            template<typename K, typename V> V get(K key)
             {
                 this->push();
                 luaT_pushvalue(this->state(), key);
@@ -251,7 +289,7 @@ namespace Lua
                 return v;
             }
 
-            template<typename K> LuaTable::Ptr get(K key) const
+            template<typename K> LuaTable::Ptr get(K key)
             {
                 this->push();
                 luaT_pushvalue(this->state(), key);
@@ -262,62 +300,87 @@ namespace Lua
                 return t;
             }
 
-            template<typename ReturnType, typename... Args> typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr method(lua_String name) const
-            {
-                this->push();
-                luaT_pushvalue(this->state(), name);
-                lua_gettable(this->state(), -2);
-
-                typename LuaTable::LuaMethodT<ReturnType, Args...>::Ptr t(new LuaTable::LuaMethodT<ReturnType, Args...>(this->state(), -1));
-                lua_pop(this->state(), 2);
-                return t;
-            }
-
-            template<typename T> T* me() const
+            template<typename T> T* me()
             {
                 lua_UserData thethis = this->get<lua_String, lua_UserData>(LuaTable::COBJECT_FIELD);
                 return reinterpret_cast<T*>(thethis);
             }
 
-            void set(lua_Number key, lua_UserData value) const;
-            void set(lua_String key, lua_UserData value) const;
-            void set(lua_Number key, lua_Number value) const;
-            void set(lua_String key, lua_String value) const;
-            void set(lua_String key, lua_Number value) const;
-            void set(lua_Number key, lua_String value) const;           
+            template<typename ReturnType, typename... Args> ReturnValue<ReturnType> call(lua_String name, Args... args)
+            {
+                std::string s = name;
+                Utils::Mangler::MangledNameT<Args...>()(&s);
+
+                this->push();
+                luaT_pushvalue(this->state(), name);
+                lua_gettable(this->state(), -2);
+
+                if(this->_tfoverloads.contains(name, s.c_str())) /* Is a Static Function? */
+                {
+                    typename LuaFunctionT<ReturnType, Args...>::Ptr f = LuaFunctionT<ReturnType, Args...>::fromStack(this->state(), -1);
+                    lua_pop(this->state(), 2); /* Pop the Value and the table itself */
+                    Utils::CallHelper<ReturnType, Args...> ch(f.get());
+                    return ch(nullptr, args...);
+                }
+
+                typename LuaMethodT<ReturnType, Args...>::Ptr m = LuaMethodT<ReturnType, Args...>::fromStack(this->state(), -1);
+                lua_pop(this->state(), 2); /* Pop the Value and the table itself */
+                Utils::CallHelper<ReturnType, Args...> ch(m.get());
+                return ch(this, args...);
+            }
+
+            void set(lua_Number key, lua_CFunction value, void* upvalue);
+            void set(lua_String key, lua_CFunction value, void* upvalue);
+            void set(lua_Number key, lua_UserData value);
+            void set(lua_String key, lua_UserData value);
+            void set(lua_Number key, lua_Number value);
+            void set(lua_String key, lua_String value);
+            void set(lua_String key, lua_Number value);
+            void set(lua_Number key, lua_String value);
             void set(lua_Number key, LuaTable::Ptr value);
             void set(lua_String key, LuaTable::Ptr value);
             void set(lua_Number key, LuaCFunction::Ptr value);
             void set(lua_String key, LuaCFunction::Ptr value);
+            void set(lua_Number key, LuaCMethod::Ptr value);
+            void set(lua_String key, LuaCMethod::Ptr value);
 
-            bool isEmpty() const;
-            LuaTable::Iterator begin() const;
-            LuaTable::Iterator end() const;
-            void setMe(lua_UserData thethis) const;
+            bool isEmpty();
+            LuaTable::Iterator begin();
+            LuaTable::Iterator end();
+            void setMe(lua_UserData thethis);
+            virtual int length();
+
+            friend class LuaCTable;
 
         private:
-            Utils::OverloadTable _overloads;
-            NumberRefMap _numberrefs;
-            StringRefMap _stringrefs;
+            Utils::OverloadTable<LuaCMethod::Ptr> _tmoverloads;
+            Utils::OverloadTable<LuaCFunction::Ptr> _tfoverloads;
     };
 
-    template<> inline LuaTypes::LuaType typeOf<LuaTable::Ptr>()
+    template<> struct TypeOf<LuaTable::Ptr>
     {
-        return LuaTypes::Table;
-    }
+        typedef LuaTable::Ptr Type;
+        static constexpr LuaTypes::LuaType LuaType = LuaTypes::Table;
+        static constexpr const char* TypeName = "Table";
+    };
 
     template<> struct ValueExtractor<LuaTable::Ptr>
     {
         static LuaTable::Ptr get(lua_State *l)
         {
-            LuaTable::Ptr val = LuaTable::create(l, -1);
+            LuaTable::Ptr val = LuaTable::fromStack(l, -1);
             lua_pop(l, 1);
             return val;
         }
     };
 
     void luaT_getvalue(lua_State *l, int index, LuaTable::Ptr &v);
-    void luaT_pushvalue(lua_State *l, const LuaTable::Ptr& v);
+    void luaT_pushvalue(lua_State *, const LuaTable::Ptr& v);
+
+    template<typename T> LuaTable::Ptr luatable_cast(std::shared_ptr<T> t)
+    {
+        return std::static_pointer_cast<LuaTable>(t);
+    }
 }
 
 #endif // LUA_LUATABLE_H

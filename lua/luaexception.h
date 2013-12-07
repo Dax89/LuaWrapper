@@ -1,7 +1,7 @@
 #ifndef LUAEXCEPTION_H
 #define LUAEXCEPTION_H
 
-#include <string>
+#include <sstream>
 #include <stdexcept>
 #include "lua.hpp"
 
@@ -26,20 +26,29 @@ namespace Lua
     class LuaArgumentException: public LuaException
     {
         public:
-            LuaArgumentException(lua_State* l): LuaException(NULL)
+            LuaArgumentException(lua_State* l): LuaException(nullptr)
             {
-                std::string s = lua_tostring(l, lua_upvalueindex(1));
-
-                s.append("Invalid Argument(s)");
-                this->_msg = s.c_str();
+                std::stringstream ss;
+                ss << lua_tostring(l, lua_upvalueindex(1)) << " Invalid Argument(s)";
+                this->_msg = ss.str().c_str();
             }
 
-            LuaArgumentException(lua_State* l, const char* msg): LuaException(NULL)
+            LuaArgumentException(lua_State* l, const char* msg): LuaException(nullptr)
             {
-                std::string s = lua_tostring(l, lua_upvalueindex(1));
+                std::stringstream ss;
+                ss << lua_tostring(l, lua_upvalueindex(1)) << ": " << msg;
+                this->_msg = ss.str().c_str();
+            }
+    };
 
-                s.append(": ").append(msg);
-                this->_msg = s.c_str();
+    class LuaOverloadException: public LuaException
+    {
+        public:
+            LuaOverloadException(const char* func): LuaException(nullptr)
+            {
+                std::stringstream ss;
+                ss << "Overload " << func << " not found";
+                this->_msg = ss.str().c_str();
             }
     };
 }

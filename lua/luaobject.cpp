@@ -16,8 +16,14 @@ namespace Lua
         return this->_state;
     }
 
-    bool LuaObject::isNull() const
+    bool LuaObject::isNull()
     {
         return this->type() == LuaTypes::Nil;
+    }
+
+    void LuaObject::pushGlobal(lua_String name)
+    {
+        this->push();
+        lua_setglobal(this->_state, name);
     }
 }

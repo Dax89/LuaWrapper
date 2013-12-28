@@ -31,8 +31,8 @@ namespace Lua
 
         private:
             void generateTable(lua_State* l);
-            static int metaIndex(lua_State* l);
-            static int metaNewIndex(lua_State* l);
+            static int staticMetaIndex(lua_State* l);
+            static int staticMetaNewIndex(lua_State* l);
 
         private:  /* Overriden Methods */
             virtual void pushGlobal(lua_String name);
@@ -41,6 +41,10 @@ namespace Lua
             virtual int length();
             virtual LuaTypes::LuaType type();
             virtual void push();
+
+        protected:
+            virtual void metaIndex(lua_State* l);
+            virtual void metaNewIndex(lua_State* l);
 
         protected:
             template<typename ReturnType, typename Self, typename... Args> void exportMethod(lua_String name, ReturnType (Self::*func)(Args...))

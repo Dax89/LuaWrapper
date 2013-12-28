@@ -162,10 +162,19 @@ namespace Lua
         this->set(LuaTable::COBJECT_FIELD, thethis);
     }
 
-    int LuaTable::length()
+    int LuaTable::itemCount()
     {
         this->push();
         int len = luaT_tablelength(this->state(), -1);
+
+        lua_pop(this->state(), 1);
+        return len;
+    }
+
+    int LuaTable::length()
+    {
+        this->push();
+        int len = lua_objlen(this->state(), -1);
 
         lua_pop(this->state(), 1);
         return len;

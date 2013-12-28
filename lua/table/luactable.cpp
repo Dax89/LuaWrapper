@@ -5,8 +5,8 @@ namespace Lua
     LuaCTable::LuaCTable(lua_State *l, lua_String name): LuaObject(l), _name(name)
     {
         LuaTable::Ptr meta = LuaTable::create(l);
-        meta->set("__index", &LuaCTable::metaIndex, this);
-        meta->set("__newindex", &LuaCTable::metaNewIndex, this);
+        meta->set("__index", &LuaCTable::staticMetaIndex, this);
+        meta->set("__newindex", &LuaCTable::staticMetaNewIndex, this);
 
         this->_table = LuaTable::create(l, meta);
         this->_table->setMe(this);
@@ -35,17 +35,54 @@ namespace Lua
         return *this;
     }
 
-    int LuaCTable::metaIndex(lua_State *l)
+    int LuaCTable::staticMetaIndex(lua_State *l)
     {
         LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
+        thethis->metaIndex(l);
+        return 1;
+    }
 
+    int LuaCTable::staticMetaNewIndex(lua_State *l)
+    {
+        LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
+        thethis->metaNewIndex(l);
+        return 0;
+    }
+
+    void LuaCTable::pushGlobal(lua_String name)
+    {
+        LuaObject::pushGlobal(name);
+    }
+
+    Lua::LuaCTable::operator LuaTable::Ptr()
+    {
+        return this->_table;
+    }
+
+    int LuaCTable::length()
+    {
+        return this->_table->length();
+    }
+
+    LuaTypes::LuaType LuaCTable::type()
+    {
+        return this->_table->type();
+    }
+
+    void LuaCTable::push()
+    {
+        this->_table->push();
+    }
+
+    void LuaCTable::metaIndex(lua_State *l)
+    {
         if(luaT_typeof(l, 2) == LuaTypes::String)
         {
             lua_String key = lua_tostring(l, 2);
 
-            if(thethis->_fieldmap.find(key) != thethis->_fieldmap.end())
+            if(this->_fieldmap.find(key) != this->_fieldmap.end())
             {
-                FieldItem fi = thethis->_fieldmap[key];
+                FieldItem fi = this->_fieldmap[key];
 
                 switch(fi.Type)
                 {
@@ -53,21 +90,21 @@ namespace Lua
                     {
                         lua_String* s = reinterpret_cast<lua_String*>(fi.FieldAddress);
                         lua_pushstring(l, *s);
-                        return 1;
+                        return;
                     }
 
                     case LuaTypes::Integer:
                     {
                         lua_Integer* i = reinterpret_cast<lua_Integer*>(fi.FieldAddress);
                         lua_pushnumber(l, *i);
-                        return 1;
+                        return;
                     }
 
                     case LuaTypes::Number:
                     {
                         lua_Number* i = reinterpret_cast<lua_Number*>(fi.FieldAddress);
                         lua_pushnumber(l, *i);
-                        return 1;
+                        return;
                     }
 
                     case LuaTypes::Table:
@@ -79,7 +116,7 @@ namespace Lua
                         else
                             lua_pushnil(l);
 
-                        return 1;
+                        return;
                     }
 
                     case LuaTypes::CTable:
@@ -91,14 +128,14 @@ namespace Lua
                         else
                             lua_pushnil(l);
 
-                        return 1;
+                        return;
                     }
 
                     case LuaTypes::Bool:
                     {
                         bool* b = reinterpret_cast<bool*>(fi.FieldAddress);
                         lua_pushboolean(l, *b);
-                        return 1;
+                        return;
                     }
 
                     default:
@@ -109,20 +146,17 @@ namespace Lua
 
         lua_pushvalue(l, 2);
         lua_rawget(l, 1);
-        return 1;
     }
 
-    int LuaCTable::metaNewIndex(lua_State *l)
+    void LuaCTable::metaNewIndex(lua_State *l)
     {
-        LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
-
         if(luaT_typeof(l, 2) == LuaTypes::String)
         {
             lua_String key = lua_tostring(l, 2);
 
-            if(thethis->_fieldmap.find(key) != thethis->_fieldmap.end())
+            if(this->_fieldmap.find(key) != this->_fieldmap.end())
             {
-                FieldItem fi = thethis->_fieldmap[key];
+                FieldItem fi = this->_fieldmap[key];
 
                 switch(fi.Type)
                 {
@@ -177,32 +211,6 @@ namespace Lua
         lua_pushvalue(l, 2);
         lua_pushvalue(l, 3);
         lua_rawset(l, 1);
-        return 0;
-    }
-
-    void LuaCTable::pushGlobal(lua_String name)
-    {
-        LuaObject::pushGlobal(name);
-    }
-
-    Lua::LuaCTable::operator LuaTable::Ptr()
-    {
-        return this->_table;
-    }
-
-    int LuaCTable::length()
-    {
-        return this->_table->length();
-    }
-
-    LuaTypes::LuaType LuaCTable::type()
-    {
-        return this->_table->type();
-    }
-
-    void LuaCTable::push()
-    {
-        this->_table->push();
     }
 
     void luaT_getvalue(lua_State *l, int index, LuaCTable::Ptr &v)

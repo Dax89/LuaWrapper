@@ -348,6 +348,7 @@ namespace Lua
             LuaTable::Iterator begin();
             LuaTable::Iterator end();
             void setMe(lua_UserData thethis);
+            int itemCount();
             virtual int length();
 
             friend class LuaCTable;

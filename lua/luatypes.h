@@ -206,6 +206,8 @@ namespace Lua
     bool luaT_isref(lua_State* l, int index);
     bool luaT_isvalue(lua_State* l, int index);
     int luaT_tablelength(lua_State* l, int index);
+    int luaT_pushtype(lua_State* l, int narg);
+    int luaT_typeerror(lua_State* l, int narg, const char* tname);
 
     inline void luaT_getvalue(lua_State* l, int index, lua_Integer& v) { v = lua_tointeger(l, index); }
     inline void luaT_getvalue(lua_State* l, int index, lua_Number& v) { v = lua_tonumber(l, index); }
@@ -228,7 +230,7 @@ namespace Lua
             t1 = LuaTypes::Number;
 
         if(t2 != t1)
-            luaL_typerror(l, narg, TypeOf<T>::TypeName);
+            luaT_typeerror(l, narg, TypeOf<T>::TypeName);
 
         luaT_getvalue(l, narg, t);
     }

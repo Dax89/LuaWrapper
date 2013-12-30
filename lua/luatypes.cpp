@@ -151,4 +151,20 @@ namespace Lua
         return luaT_typename(luaT_typeof(l, index));
     }
 
+    int luaT_pushtype(lua_State *l, int narg)
+    {
+        if(!luaL_callmeta(l, narg, "__type"))
+            lua_pushstring(l, luaL_typename(l, narg));
+
+        return 1;
+    }
+
+    int luaT_typeerror(lua_State *l, int narg, const char *tname)
+    {
+        const char *msg;
+        luaT_pushtype(l, narg);
+        msg = lua_pushfstring(l, "%s expected, got %s", tname, lua_tostring(l, -1));
+        return luaL_argerror(l, narg, msg);
+    }
+
 }

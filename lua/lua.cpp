@@ -4,9 +4,8 @@ namespace Lua
 {
     lua_State* luaW_newstate(bool strict)
     {
-        lua_State* l = lua_open();
+        lua_State* l = luaL_newstate();
         luaL_openlibs(l);
-        Libraries::luaopen_libraries(l); /* Load Wrapper's Support Libraries */
 
         if(strict)
             luaL_dostring(l, STRICT_LUA);

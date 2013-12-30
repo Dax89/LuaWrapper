@@ -60,7 +60,7 @@ namespace Lua
     {
         this->push();
 
-        if((luaT_typeof(l, 1) == LuaTypes::Table) && lua_equal(l, 1, -1))
+        if((luaT_typeof(l, 1) == LuaTypes::Table) && lua_compare(l, 1, -1, LUA_OPEQ))
         {
             lua_remove(l, 1); /* Remove Self */
             argcount--;
@@ -174,7 +174,7 @@ namespace Lua
     int LuaTable::length()
     {
         this->push();
-        int len = lua_objlen(this->state(), -1);
+        int len = lua_rawlen(this->state(), -1);
 
         lua_pop(this->state(), 1);
         return len;

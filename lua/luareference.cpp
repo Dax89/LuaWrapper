@@ -27,7 +27,7 @@ namespace Lua
     int LuaReference::length()
     {
         this->push();
-        int len = lua_objlen(this->state(), -1);
+        int len = lua_rawlen(this->state(), -1);
 
         lua_pop(this->state(), 1);
         return len;

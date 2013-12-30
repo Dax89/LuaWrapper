@@ -1,7 +1,6 @@
 #ifndef LUA_H
 #define LUA_H
 
-#include "libraries/libraries.h"
 #include "luathread.h"
 #include "table/luatable.h"
 #include "table/luactable.h"

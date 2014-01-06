@@ -21,6 +21,7 @@ namespace Lua
 
         public:
             LuaCTable(lua_State* l, lua_String name);
+            LuaCTable(const LuaTable::Ptr& t);
             virtual ~LuaCTable();
             lua_String name();
             virtual void pushGlobal();
@@ -33,6 +34,7 @@ namespace Lua
             void generateTable(lua_State* l);
             static int staticMetaIndex(lua_State* l);
             static int staticMetaNewIndex(lua_State* l);
+            static int staticMetaLength(lua_State* l);
 
         private:  /* Overriden Methods */
             virtual void pushGlobal(lua_String name);
@@ -45,6 +47,7 @@ namespace Lua
         protected:
             virtual void metaIndex(lua_State* l);
             virtual void metaNewIndex(lua_State* l);
+            virtual int metaLength();
 
         protected:
             template<typename ReturnType, typename Self, typename... Args> void exportMethod(lua_String name, ReturnType (Self::*func)(Args...))

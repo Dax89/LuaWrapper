@@ -7,9 +7,15 @@ namespace Lua
         LuaTable::Ptr meta = LuaTable::create(l);
         meta->set("__index", &LuaCTable::staticMetaIndex, this);
         meta->set("__newindex", &LuaCTable::staticMetaNewIndex, this);
+        meta->set("__len", &LuaCTable::staticMetaLength, this);
 
         this->_table = LuaTable::create(l, meta);
         this->_table->setMe(this);
+    }
+
+    LuaCTable::LuaCTable(const LuaTable::Ptr &t): LuaObject(t->state()), _table(t)
+    {
+
     }
 
     LuaCTable::~LuaCTable()
@@ -47,6 +53,15 @@ namespace Lua
         LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
         thethis->metaNewIndex(l);
         return 0;
+    }
+
+    int LuaCTable::staticMetaLength(lua_State *l)
+    {
+        LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
+        int len = thethis->metaLength();
+
+        lua_pushinteger(l, len);
+        return 1;
     }
 
     void LuaCTable::pushGlobal(lua_String name)
@@ -211,6 +226,11 @@ namespace Lua
         lua_pushvalue(l, 2);
         lua_pushvalue(l, 3);
         lua_rawset(l, 1);
+    }
+
+    int LuaCTable::metaLength()
+    {
+        return this->_table->length();
     }
 
     void luaT_getvalue(lua_State *l, int index, LuaCTable::Ptr &v)

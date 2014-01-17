@@ -66,12 +66,12 @@ namespace Lua
         lua_pushcclosure(this->state(), this->luaCFunction(), 1);
     }
 
-    int LuaCFunction::length()
+    lua_Integer LuaCFunction::length() const
     {
         return 0;
     }
 
-    LuaTypes::LuaType LuaCFunction::type()
+    LuaTypes::LuaType LuaCFunction::type() const
     {
         return LuaTypes::Function;
     }

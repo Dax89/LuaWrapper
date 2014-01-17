@@ -19,8 +19,8 @@ namespace Lua
             virtual ~LuaObject();
             lua_State* state() const;
             bool isNull();
-            virtual int length() = 0;
-            virtual LuaTypes::LuaType type() = 0;
+            virtual lua_Integer length() const = 0;
+            virtual LuaTypes::LuaType type() const = 0;
             virtual void push() = 0;
             virtual void pushGlobal(lua_String name);
 

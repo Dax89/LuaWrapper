@@ -171,15 +171,6 @@ namespace Lua
         return len;
     }
 
-    int LuaTable::length()
-    {
-        this->push();
-        int len = lua_rawlen(this->state(), -1);
-
-        lua_pop(this->state(), 1);
-        return len;
-    }
-
     void LuaTable::set(lua_Number key, lua_UserData value)
     {
         LuaTable::ValueSetter<lua_Number, lua_UserData>()(this, key, value);

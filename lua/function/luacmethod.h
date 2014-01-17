@@ -102,8 +102,8 @@ namespace Lua
             virtual lua_CFunction luaCFunction() const = 0;
 
         public: /* Overriden Methods */
-            virtual int length();
-            virtual LuaTypes::LuaType type();
+            virtual lua_Integer length() const;
+            virtual LuaTypes::LuaType type() const;
             virtual void push();
     };
 

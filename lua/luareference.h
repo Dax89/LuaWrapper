@@ -21,8 +21,8 @@ namespace Lua
             bool isValid();
 
         public: /* Overriden Methods */
-            virtual int length();
-            virtual LuaTypes::LuaType type();
+            virtual lua_Integer length() const;
+            virtual LuaTypes::LuaType type() const;
             virtual void push();
 
         protected:

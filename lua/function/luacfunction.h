@@ -103,8 +103,8 @@ namespace Lua
 
         public: /* Overriden Methods */
             virtual void push();
-            virtual int length();
-            virtual LuaTypes::LuaType type();
+            virtual lua_Integer length() const;
+            virtual LuaTypes::LuaType type() const;
 
         protected:
             static Utils::OverloadTable<LuaCFunction::Ptr> _globaloverloads;

@@ -58,7 +58,7 @@ namespace Lua
     int LuaCTable::staticMetaLength(lua_State *l)
     {
         LuaCTable* thethis = reinterpret_cast<LuaCTable*>(lua_touserdata(l, lua_upvalueindex(1)));
-        int len = thethis->metaLength();
+        lua_Integer len = thethis->metaLength();
 
         lua_pushinteger(l, len);
         return 1;
@@ -74,12 +74,12 @@ namespace Lua
         return this->_table;
     }
 
-    int LuaCTable::length()
+    lua_Integer LuaCTable::length() const
     {
         return this->_table->length();
     }
 
-    LuaTypes::LuaType LuaCTable::type()
+    LuaTypes::LuaType LuaCTable::type() const
     {
         return this->_table->type();
     }
@@ -228,9 +228,9 @@ namespace Lua
         lua_rawset(l, 1);
     }
 
-    int LuaCTable::metaLength()
+    lua_Integer LuaCTable::metaLength()
     {
-        return this->_table->length();
+        return this->length();
     }
 
     void luaT_getvalue(lua_State *l, int index, LuaCTable::Ptr &v)

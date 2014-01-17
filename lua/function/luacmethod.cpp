@@ -16,12 +16,12 @@ namespace Lua
         return 0;
     }
 
-    int LuaCMethod::length()
+    lua_Integer LuaCMethod::length() const
     {
         return 0;
     }
 
-    LuaTypes::LuaType LuaCMethod::type()
+    LuaTypes::LuaType LuaCMethod::type() const
     {
         return LuaTypes::Function;
     }

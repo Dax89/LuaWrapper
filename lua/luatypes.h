@@ -11,7 +11,7 @@
 
 namespace Lua
 {
-    typedef void* lua_UserData;
+    typedef void* lua_LightUserData;
     typedef const char* lua_String;
 
     namespace LuaTypes
@@ -100,9 +100,9 @@ namespace Lua
         static constexpr const char* TypeName = "String";
     };
 
-    template<> struct TypeOf<lua_UserData>
+    template<> struct TypeOf<lua_LightUserData>
     {
-        typedef lua_UserData Type;
+        typedef lua_LightUserData Type;
         static constexpr LuaTypes::LuaType LuaType = LuaTypes::UserData;
         static constexpr const char* TypeName = "UserData";
     };
@@ -149,11 +149,11 @@ namespace Lua
         }
     };
 
-    template<> struct ValueExtractor<lua_UserData>
+    template<> struct ValueExtractor<lua_LightUserData>
     {
-        static lua_UserData get(lua_State *l)
+        static lua_LightUserData get(lua_State *l)
         {
-            lua_UserData val = lua_touserdata(l, -1);
+            lua_LightUserData val = lua_touserdata(l, -1);
             lua_pop(l, 1);
             return val;
         }
@@ -189,9 +189,9 @@ namespace Lua
         typedef lua_String Type;
     };
 
-    template<> struct TypeCreator<LuaTypes::UserData>
+    template<> struct TypeCreator<LuaTypes::LightUserData>
     {
-        typedef lua_UserData Type;
+        typedef lua_LightUserData Type;
     };
 
     template<> struct TypeCreator<LuaTypes::Bool>
@@ -212,13 +212,13 @@ namespace Lua
     inline void luaT_getvalue(lua_State* l, int index, lua_Integer& v) { v = lua_tointeger(l, index); }
     inline void luaT_getvalue(lua_State* l, int index, lua_Number& v) { v = lua_tonumber(l, index); }
     inline void luaT_getvalue(lua_State* l, int index, lua_String& v) { v = lua_tostring(l, index); }
-    inline void luaT_getvalue(lua_State* l, int index, lua_UserData& v) { v = lua_touserdata(l, index); }
+    inline void luaT_getvalue(lua_State* l, int index, lua_LightUserData& v) { v = lua_touserdata(l, index); }
     inline void luaT_getvalue(lua_State* l, int index, bool& v) { v = (lua_toboolean(l, index) == 1); }
 
     inline void luaT_pushvalue(lua_State* l, lua_Integer v) { lua_pushinteger(l, v); }
     inline void luaT_pushvalue(lua_State* l, lua_Number v) { lua_pushnumber(l, v); }
     inline void luaT_pushvalue(lua_State* l, lua_String v) { lua_pushstring(l, v); }
-    inline void luaT_pushvalue(lua_State* l, lua_UserData v) { lua_pushlightuserdata(l, v); }
+    inline void luaT_pushvalue(lua_State* l, lua_LightUserData v) { lua_pushlightuserdata(l, v); }
     inline void luaT_pushvalue(lua_State* l, bool v) { lua_pushboolean(l, v); }
 
     template<typename T> inline void luaT_getargument(lua_State* l, int narg, T& t)

@@ -28,7 +28,7 @@ namespace Lua
 
     void LuaCMethod::push()
     {
-        luaT_pushvalue(this->state(), reinterpret_cast<lua_UserData>(this));
+        luaT_pushvalue(this->state(), reinterpret_cast<lua_LightUserData>(this));
         lua_pushcclosure(this->state(), this->luaCFunction(), 1);
     }
 

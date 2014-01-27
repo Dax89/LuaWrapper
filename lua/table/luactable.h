@@ -91,6 +91,8 @@ namespace Lua
         private:
             FieldMap _fieldmap;
             lua_String _name;
+
+        protected:
             LuaTable::Ptr _table;
     };
 

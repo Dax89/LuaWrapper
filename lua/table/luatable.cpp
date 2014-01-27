@@ -157,7 +157,7 @@ namespace Lua
         return LuaTable::Iterator(this, true);
     }
 
-    void LuaTable::setMe(lua_UserData thethis)
+    void LuaTable::setMe(lua_LightUserData thethis)
     {
         this->set(LuaTable::COBJECT_FIELD, thethis);
     }
@@ -171,14 +171,14 @@ namespace Lua
         return len;
     }
 
-    void LuaTable::set(lua_Number key, lua_UserData value)
+    void LuaTable::set(lua_Number key, lua_LightUserData value)
     {
-        LuaTable::ValueSetter<lua_Number, lua_UserData>()(this, key, value);
+        LuaTable::ValueSetter<lua_Number, lua_LightUserData>()(this, key, value);
     }
 
-    void LuaTable::set(lua_String key, lua_UserData value)
+    void LuaTable::set(lua_String key, lua_LightUserData value)
     {
-        LuaTable::ValueSetter<lua_String, lua_UserData>()(this, key, value);
+        LuaTable::ValueSetter<lua_String, lua_LightUserData>()(this, key, value);
     }
 
     void LuaTable::set(lua_Number key, lua_Number value)
@@ -238,7 +238,7 @@ namespace Lua
             lua_pushstring(this->state(), key);
 
             /* Value */
-            lua_pushlightuserdata(this->state(), reinterpret_cast<lua_UserData>(this));
+            lua_pushlightuserdata(this->state(), reinterpret_cast<lua_LightUserData>(this));
             lua_pushstring(this->state(), key);
             lua_pushcclosure(this->state(), LuaTable::methodDispatcher(), 2);
 
@@ -264,7 +264,7 @@ namespace Lua
             lua_pushstring(this->state(), key);
 
             /* Value */
-            lua_pushlightuserdata(this->state(), reinterpret_cast<lua_UserData>(this));
+            lua_pushlightuserdata(this->state(), reinterpret_cast<lua_LightUserData>(this));
             lua_pushstring(this->state(), key);
             lua_pushcclosure(this->state(), LuaTable::functionDispatcher(), 2);
 

@@ -302,7 +302,7 @@ namespace Lua
 
             template<typename T> T* me()
             {
-                lua_UserData thethis = this->get<lua_String, lua_UserData>(LuaTable::COBJECT_FIELD);
+                lua_LightUserData thethis = this->get<lua_String, lua_LightUserData>(LuaTable::COBJECT_FIELD);
                 return reinterpret_cast<T*>(thethis);
             }
 
@@ -331,8 +331,8 @@ namespace Lua
 
             void set(lua_Number key, lua_CFunction value, void* upvalue);
             void set(lua_String key, lua_CFunction value, void* upvalue);
-            void set(lua_Number key, lua_UserData value);
-            void set(lua_String key, lua_UserData value);
+            void set(lua_Number key, lua_LightUserData value);
+            void set(lua_String key, lua_LightUserData value);
             void set(lua_Number key, lua_Number value);
             void set(lua_String key, lua_String value);
             void set(lua_String key, lua_Number value);
@@ -347,7 +347,7 @@ namespace Lua
             bool isEmpty();
             LuaTable::Iterator begin();
             LuaTable::Iterator end();
-            void setMe(lua_UserData thethis);
+            void setMe(lua_LightUserData thethis);
             int itemCount();
 
             friend class LuaCTable;

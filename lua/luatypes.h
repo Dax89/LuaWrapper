@@ -7,32 +7,12 @@
 #include <cstring>
 #include <sstream>
 #include <tuple>
-#include <lua.hpp>
+#include "luatypedefs.h"
 
 namespace Lua
 {
     typedef void* lua_LightUserData;
     typedef const char* lua_String;
-
-    namespace LuaTypes
-    {
-        enum LuaType
-        {
-            None          = LUA_TNONE,
-            Nil           = LUA_TNIL,
-            Bool          = LUA_TBOOLEAN,
-            LightUserData = LUA_TLIGHTUSERDATA,
-            Number        = LUA_TNUMBER,
-            String        = LUA_TSTRING,
-            Table         = LUA_TTABLE,
-            Function      = LUA_TFUNCTION,
-            UserData      = LUA_TUSERDATA,
-            Thread        = LUA_TTHREAD,
-
-            Integer       = 0x1000, /* Special Type for Wrapper when exporting Integers from C++ to Lua */
-            CTable        = 0x1001  /* Special Type for Wrapper when exporting Tables from C++ to Lua */
-        };
-    }
 
     template<typename T> class ReturnValue
     {
@@ -72,13 +52,6 @@ namespace Lua
             ReturnValue<void>& operator=(const ReturnValue<void>&) { return *this; }
     };
 
-    template<typename T> struct TypeOf
-    {
-        typedef T Type;
-        static constexpr LuaTypes::LuaType LuaType = LuaTypes::None;
-        static constexpr const char* TypeName = "None";
-    };
-
     template<> struct TypeOf<lua_Integer>
     {
         typedef lua_Integer Type;
@@ -112,11 +85,6 @@ namespace Lua
         typedef bool Type;
         static constexpr LuaTypes::LuaType LuaType = LuaTypes::Bool;
         static constexpr const char* TypeName = "Bool";
-    };
-
-    template<typename T> struct ValueExtractor
-    {
-
     };
 
     template<> struct ValueExtractor<lua_Integer>
